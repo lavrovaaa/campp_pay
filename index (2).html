@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Бронирование</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
+
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #ffba0d;
+      color: white;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    h2 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    label {
+      font-weight: 700;
+      margin-top: 15px;
+      display: block;
+    }
+
+    input, button {
+      padding: 12px;
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+      font-family: 'Montserrat', sans-serif;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+    }
+
+    input {
+      background-color: #fff;
+      color: #000;
+    }
+
+    button {
+      background-color: #fff;
+      color: #000;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #f1f1f1;
+    }
+
+    .summary {
+      font-size: 1.1em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Выберите даты пребывания</h2>
+
+  <label for="daterange">Диапазон дат:</label>
+  <input type="text" id="daterange" placeholder="Выбери даты" />
+
+  <label for="promo">Промокод (если есть):</label>
+  <input type="text" id="promo" placeholder="Введите промокод" />
+
+  <div class="summary">
+    Кол-во дней: <span id="days">0</span><br />
+    Итого к оплате: <span id="total">0</span> ₽
+  </div>
+
+  <button onclick="pay()">Оплатить через СБП</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/rangePlugin.js"></script>
+
+  <script>
+    let discount = 0;
+
+    function updateTotal(selectedDates) {
+      if (selectedDates.length === 2) {
+        const start = selectedDates[0];
+        const end = selectedDates[1];
+
+        const dates = [];
+        let current = new Date(start);
+        while (current < end) {
+          dates.push(new Date(current));
+          current.setDate(current.getDate() + 1);
+        }
+
+        const days = dates.length;
+        let total = 0;
+        dates.forEach(date => {
+          if (date.getFullYear() === 2025 && date.getMonth() === 5 && date.getDate() === 14) {
+            total += 400;
+          } else {
+            total += 600;
+          }
+        });
+
+        total = Math.round(total * (1 - discount));
+
+        document.getElementById("days").textContent = days;
+        document.getElementById("total").textContent = total;
+      }
+    }
+
+    const fp = flatpickr("#daterange", {
+      mode: "range",
+      dateFormat: "Y-m-d",
+      locale: "ru",
+      onChange: function(selectedDates) {
+        updateTotal(selectedDates);
+      }
+    });
+
+    document.getElementById("promo").addEventListener("input", function () {
+      const code = this.value.trim().toLowerCase();
+      discount = (code === "скидка10") ? 0.1 : 0;
+      if (fp.selectedDates.length === 2) {
+        updateTotal(fp.selectedDates);
+      }
+    });
+
+    function pay() {
+      const amount = document.getElementById("total").textContent;
+      if (amount === "0") {
+        alert("Пожалуйста, выберите даты.");
+        return;
+      }
+
+      const baseLink = "https://qr.nspk.ru/AS2A007Q07QADHC79JMBRDT5OEJP9TTC?type=01&bank=100000000004&crc=49BB";
+      const amountInKopecks = amount * 100;
+      const fullLink = baseLink + "&sum=" + amountInKopecks;
+
+      window.location.href = fullLink;
+    }
+  </script>
+</body>
+</html>
